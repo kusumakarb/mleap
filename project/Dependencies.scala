@@ -6,27 +6,27 @@ import Keys._
 object Dependencies {
   import DependencyHelpers._
 
-  val sparkVersion = "2.3.0"
+  val sparkVersion = "2.4.0"
   val scalaTestVersion = "3.0.0"
   val tensorflowVersion = "1.7.0"
   val akkaVersion = "2.4.16"
   val akkaHttpVersion = "10.0.3"
   val xgboostVersion = "0.80"
-  val hadoopVersion = "2.6.5" // matches spark version
+  val hadoopVersion = "2.7.0" // matches spark version
 
   object Compile {
-    val sparkMllibLocal = "org.apache.spark" %% "spark-mllib-local" % sparkVersion excludeAll(ExclusionRule(organization = "org.scalatest"))
-    val spark = Seq("org.apache.spark" %% "spark-core" % sparkVersion,
-      "org.apache.spark" %% "spark-sql" % sparkVersion,
-      "org.apache.spark" %% "spark-mllib" % sparkVersion,
-      "org.apache.spark" %% "spark-mllib-local" % sparkVersion,
-      "org.apache.spark" %% "spark-catalyst" % sparkVersion)
+    val sparkMllibLocal = "org.apache.spark" %% "spark-mllib-local" % sparkVersion from "file://../lib/spark-mllib-local_2.12-2.4.0.jar" excludeAll(ExclusionRule(organization = "org.scalatest"))
+    val spark = Seq("org.apache.spark" %% "spark-core" % sparkVersion from "file://../lib/spark-mllib-local_2.12-2.4.0.jar",
+      "org.apache.spark" %% "spark-sql" % sparkVersion from "file://../lib/spark-core_2.12-2.4.0.jar",
+      "org.apache.spark" %% "spark-mllib" % sparkVersion from "file://../lib/spark-mllib_2.12-2.4.0.jar",
+      "org.apache.spark" %% "spark-mllib-local" % sparkVersion from "file://../lib/spark-mllib-local_2.12-2.4.0.jar",
+      "org.apache.spark" %% "spark-catalyst" % sparkVersion from "file://../lib/spark-catalyst_2.12-2.4.0.jar")
     val avroDep = "org.apache.avro" % "avro" % "1.8.1"
     val sprayJson = "io.spray" %% "spray-json" % "1.3.2"
     val arm = "com.jsuereth" %% "scala-arm" % "2.0"
     val config = "com.typesafe" % "config" % "1.3.0"
     val scalaReflect = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-reflect" % _)
-    val sparkAvro = "com.databricks" %% "spark-avro" % "3.0.1"
+    //    val sparkAvro = "com.databricks" %% "spark-avro" % "2.4.0"
     val scalaTest = "org.scalatest" %% "scalatest" % scalaTestVersion
     val jTransform = "com.github.rwl" % "jtransforms" % "2.4.0" exclude("junit", "junit")
     val tensorflowDeps = Seq(
@@ -41,11 +41,14 @@ object Dependencies {
     val xgboostDep = "ml.dmlc" % "xgboost4j" % xgboostVersion
     val xgboostSparkDep = "ml.dmlc" % "xgboost4j-spark" % xgboostVersion
     val hadoop = "org.apache.hadoop" % "hadoop-client" % hadoopVersion
+    // https://mvnrepository.com/artifact/org.scalanlp/breeze
+    val breeze  = "org.scalanlp" %% "breeze" % "1.0-RC2"
+
   }
 
   object Test {
     val scalaTest = "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
-    val akkaHttpTestkit =  "com.typesafe.akka" % "akka-http-testkit_2.11" % akkaHttpVersion % "test"
+    val akkaHttpTestkit =  "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % "test"
   }
 
   object Provided {
@@ -64,13 +67,13 @@ object Dependencies {
 
   val base = l ++= Seq()
 
-  val core = l ++= Seq(sparkMllibLocal, jTransform, Test.scalaTest)
+  val core = l ++= Seq(sparkMllibLocal, jTransform, Test.scalaTest, breeze)
 
   def runtime(scalaVersion: SettingKey[String]) = l ++= (Seq(Test.scalaTest) ++ scalaReflect.modules(scalaVersion.value))
 
   val sparkBase = l ++= Provided.spark ++ Seq(Test.scalaTest)
 
-  val sparkTestkit = l ++= Provided.spark ++ Seq(sparkAvro, scalaTest)
+  val sparkTestkit = l ++= Provided.spark ++ Seq(scalaTest) // Seq(sparkAvro, scalaTest)
 
   val spark = l ++= Provided.spark
 
@@ -86,9 +89,9 @@ object Dependencies {
 
   val serving = l ++= Seq(akkaHttp, akkaHttpSprayJson, config, Test.scalaTest, Test.akkaHttpTestkit)
 
-  val benchmark = l ++= Seq(scalameter, scopt, sparkAvro) ++ Compile.spark
+  val benchmark = l ++= Seq(scalameter, scopt) ++ Compile.spark
 
-  val databricksRuntimeTestkit = l ++= Provided.spark ++ Seq(xgboostSparkDep, sparkAvro)
+  val databricksRuntimeTestkit = l ++= Provided.spark ++ Seq(xgboostSparkDep)
 
   object DependencyHelpers {
     case class ScalaVersionDependentModuleID(modules: String => Seq[ModuleID]) {
